@@ -46,3 +46,14 @@
   50% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

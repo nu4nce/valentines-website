@@ -133,7 +133,7 @@ export default function LoveSlideshow() {
   return (
     <div style={styles.stage}>
       <div style={styles.header}>
-        <h1 style={styles.title}>Dis us babe :DDDDDDD </h1>
+        <h1 style={styles.title}>FIX NOG TEKST HIER </h1>
       </div>
 
       <div

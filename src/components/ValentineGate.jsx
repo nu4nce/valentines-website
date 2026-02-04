@@ -137,7 +137,6 @@ export default function ValentineGate({ onYes }) {
     <div style={styles.stage}>
       <div style={styles.card}>
         <h1 style={styles.question}>Wil je mijn valentijn zijn? :D</h1>
-        <p style={styles.sub}>Kies verstandig 😌</p>
 
         {/* Dit is het “vakje” waarbinnen Nee mag bewegen */}
         <div style={styles.playground} ref={playgroundRef}>
@@ -161,8 +160,6 @@ export default function ValentineGate({ onYes }) {
             Nee :(
           </button>
         </div>
-
-        <div style={styles.hint}>Tip: “Nee” is een moeilijke keuze 😅</div>
       </div>
     </div>
   );

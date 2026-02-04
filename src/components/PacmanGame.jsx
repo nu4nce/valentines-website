@@ -26,6 +26,8 @@ export default function PacmanGame({ onWin }) {
   const [countdown, setCountdown] = useState(5);
   const countdownTimerRef = useRef(null);
 
+  const [dotsLeftUI, setDotsLeftUI] = useState(0);
+
   // Enemy sprite frames (open / closed)
   const divaOpenRef = useRef(null);
   const divaClosedRef = useRef(null);
@@ -37,6 +39,10 @@ export default function PacmanGame({ onWin }) {
   const martynaClosedRef = useRef(null);
 
   const martynaFrameRef = useRef(0); // 0 = closed, 1 = open
+
+  // Death / zoom-in overlay state
+  const [deathPhase, setDeathPhase] = useState("none");
+  // "none" | "fade" | "zoom" | "text" | "button"
 
 
   // A small, single-map layout (walls #, dots ., empty space ' ')
@@ -129,6 +135,7 @@ export default function PacmanGame({ onWin }) {
   useEffect(() => {
     stateRef.current.grid = initialGrid.map((r) => [...r]);
     stateRef.current.dotsLeft = initialDotCount;
+    setDotsLeftUI(initialDotCount);
     stateRef.current.player = {
       x: 1,
       y: 1,
@@ -391,8 +398,6 @@ export default function PacmanGame({ onWin }) {
         scaleX = fx < 0 ? -1 : 1;
       }
 
-
-
       ctx.rotate(rotation);
       ctx.scale(scaleX, 1);
 
@@ -443,7 +448,7 @@ export default function PacmanGame({ onWin }) {
       let scaleX = 1; // 👈 standaard: kijkt naar rechts
 
       // Links → flip horizontaal
-      if (fx < 0) {
+      if (fx > 0) {
         scaleX = -1;
       }
       // Omhoog / omlaag (zelfde als bij diva, want canvas Y-as)
@@ -519,6 +524,7 @@ export default function PacmanGame({ onWin }) {
           if (isDot(grid, s.player.x, s.player.y)) {
             grid[s.player.y][s.player.x] = " ";
             s.dotsLeft -= 1;
+            setDotsLeftUI(s.dotsLeft);
 
             if (s.dotsLeft <= 0) {
               s.running = false;
@@ -536,7 +542,15 @@ export default function PacmanGame({ onWin }) {
           if (s.enemy.x === s.player.x && s.enemy.y === s.player.y) {
             s.running = false;
             s.lost = true;
+
+            // start cinematic death sequence
+            setDeathPhase("fade");
+
+            setTimeout(() => setDeathPhase("zoom"), 400);
+            setTimeout(() => setDeathPhase("text"), 900);
+            setTimeout(() => setDeathPhase("button"), 1400);
           }
+
         }
       }
 
@@ -554,6 +568,7 @@ export default function PacmanGame({ onWin }) {
     const s = stateRef.current;
     s.grid = initialGrid.map((r) => [...r]);
     s.dotsLeft = initialDotCount;
+    setDotsLeftUI(initialDotCount);
     s.player = {
       x: 1,
       y: 1,
@@ -579,19 +594,59 @@ export default function PacmanGame({ onWin }) {
   const width = cols * cell;
   const height = rows * cell;
 
-  const dotsLeft = stateRef.current.dotsLeft;
+  // const dotsLeft = stateRef.current.dotsLeft;
   const lost = stateRef.current.lost;
 
   return (
     <div style={styles.stage}>
       <div style={styles.header}>
-        <h1 style={styles.title}>Collect all the dots 💗</h1>
+        <h1 style={styles.title}>Verzamel alle punten!</h1>
         <div style={styles.sub}>
-          Dots left: <b>{dotsLeft}</b> • Dennis is coming… 😈
+          Dots left: <b>{dotsLeftUI}</b> • Diva is op smoke... 😈
         </div>
       </div>
 
       <div style={styles.card}>
+        {deathPhase !== "none" && (
+          <div
+            style={{
+              ...styles.deathOverlay,
+              opacity: deathPhase === "fade" ? 0.6 : 1,
+            }}
+          >
+            <img
+              src="/images/diva_talking3.gif"
+              alt="Diva"
+              style={{
+                ...styles.deathDiva,
+                transform:
+                  deathPhase === "zoom" ||
+                  deathPhase === "text" ||
+                  deathPhase === "button"
+                    ? "scale(1)"
+                    : "scale(0.6)",
+                opacity: deathPhase === "fade" ? 0 : 1,
+              }}
+            />
+
+            {deathPhase === "text" || deathPhase === "button" ? (
+              <div style={styles.deathText}>"Muahahahahaha." <br></br><br></br><br></br> Je hebt verloren…</div>
+            ) : null}
+
+            {deathPhase === "button" ? (
+              <button
+                style={styles.deathBtn}
+                onClick={() => {
+                  setDeathPhase("none");
+                  restart();
+                }}
+              >
+                Opnieuw Proberen?
+              </button>
+            ) : null}
+          </div>
+        )}
+
         {/* Countdown overlay */}
         {countdown > 0 && (
           <div style={styles.countdownOverlay}>
@@ -725,5 +780,50 @@ const styles = {
     fontSize: 14,
     letterSpacing: 1,
     textTransform: "uppercase",
+  },
+
+    deathOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingTop: 40,
+    background: "rgba(0,0,0,0.55)",
+    backdropFilter: "blur(6px)",
+    transition: "opacity 0.4s ease",
+  },
+
+  deathDiva: {
+    width: "220px",
+    maxWidth: "70%",
+    borderRadius: 18,
+    transition: "transform 0.4s ease, opacity 0.4s ease",
+  },
+
+  deathText: {
+    marginTop: 20,
+    color: "white",
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: 1,
+    opacity: 0.95,
+    transition: "opacity 0.3s ease",
+  },
+
+  deathBtn: {
+    marginTop: 24,
+    padding: "12px 22px",
+    fontSize: 16,
+    fontWeight: 800,
+    borderRadius: 999,
+    border: "none",
+    cursor: "pointer",
+    background: "rgba(255,255,255,.95)",
+    color: "#ff2d73",
+    boxShadow: "0 10px 26px rgba(0,0,0,.35)",
+    animation: "fadeInUp 0.4s ease",
   },
 };
