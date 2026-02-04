@@ -1,0 +1,4 @@
+@keyframes fadeIn {
+  from { opacity: .25; transform: scale(1.01); }
+  to   { opacity: 1;   transform: scale(1); }
+}
