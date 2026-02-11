@@ -602,7 +602,7 @@ export default function PacmanGame({ onWin }) {
       <div style={styles.header}>
         <h1 style={styles.title}>Verzamel alle punten!</h1>
         <div style={styles.sub}>
-          Dots left: <b>{dotsLeftUI}</b> • Diva is op smoke... 😈
+          Punten nog te verzamelen: <b>{dotsLeftUI}</b> • Diva is op smoke... 😈
         </div>
       </div>
 
