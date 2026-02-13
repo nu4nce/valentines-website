@@ -5,11 +5,19 @@ html, body, #root {
   margin: 0;
   padding: 0;
 }
+
 body {
   background: transparent;        /* body hoeft geen kleur meer */
   overflow: hidden;               /* no scroll */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* iOS/Android “safe area” issues fix */
+#root {
+  min-height: 100svh;             /* <-- KEY: dynamic viewport height */
+  background: transparent;
+  display: block;
 }
 
 html {
@@ -22,10 +30,12 @@ body, #root {
   background: #ff77b7;
 }
 
-/* iOS/Android “safe area” issues fix */
-#root {
-  min-height: 100dvh;             /* <-- KEY: dynamic viewport height */
-  background: transparent;
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
 }
 
 /* jouw fade animatie mag blijven */
