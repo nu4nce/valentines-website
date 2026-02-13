@@ -146,7 +146,7 @@ export default function DialogueIntro({ onDone }) {
   const showEndButton = doneTyping && node?.end;
 
   return (
-    <div style={styles.stage} onPointerDown={skipTyping}>
+    <div style={styles.stage}>
 			<div style={styles.card}>
 				<div style={styles.scrollArea}>
 					<div style={styles.avatarRow}>
@@ -171,8 +171,16 @@ export default function DialogueIntro({ onDone }) {
 							))}
 						</div>
 
-						{!doneTyping && skipHint && (
-							<div style={styles.tapHint}>Tik om sneller te gaan ✨</div>
+						{!doneTyping && (
+						<button
+							style={styles.skipBtn}
+							onClick={(e) => {
+								e.stopPropagation();
+								skipTyping();
+							}}
+						>
+							Skip ⏭
+						</button>
 						)}
 					</div>
 
@@ -335,6 +343,21 @@ const styles = {
     userSelect: "none",
     pointerEvents: "none",
   },
+	
+  skipBtn: {
+  position: "absolute",
+  right: 12,
+  bottom: 10,
+  fontSize: 13,
+  background: "rgba(255,255,255,.18)",
+  color: "white",
+  border: "none",
+  padding: "8px 14px",
+  borderRadius: 999,
+  cursor: "pointer",
+  backdropFilter: "blur(6px)",
+  boxShadow: "0 6px 14px rgba(0,0,0,.18)",
+	},
 
 
 };
