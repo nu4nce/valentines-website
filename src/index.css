@@ -5,10 +5,16 @@ html, body, #root {
   margin: 0;
   padding: 0;
 }
-
 body {
-  overflow: hidden; /* 🔒 no scrolling */
+  background: transparent;        /* body hoeft geen kleur meer */
+  overflow: hidden;               /* no scroll */
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+html {
+  background: #ff77b7;           /* <-- belangrijk: ook achter de body */
+  overflow: hidden;
 }
 
 /* voorkomt “witte rand” door default background */
@@ -16,8 +22,16 @@ body, #root {
   background: #ff77b7;
 }
 
+/* iOS/Android “safe area” issues fix */
+#root {
+  min-height: 100dvh;             /* <-- KEY: dynamic viewport height */
+  background: transparent;
+}
+
 /* jouw fade animatie mag blijven */
 @keyframes fadeIn {
   from { opacity: .25; transform: scale(1.01); }
   to   { opacity: 1;   transform: scale(1); }
 }
+
+
