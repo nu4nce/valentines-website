@@ -47,14 +47,19 @@ export default function DialogueIntro({ onDone }) {
         ],
       },
 
-      divaNoMercy: {
-        text: "Ja. En ze kent geen genade Martyna.",
-        end: true,
-      },
-      divaSilent: {
-        text: 'Dat beslist ze zelf...\n"Diva kijkt je zwijgend aan..."',
-        end: true,
-      },
+			divaNoMercy: {
+				text: "Ja. En ze kent geen genade Martyna.",
+			},
+			divaSilent: {
+				text: 'Dat beslist ze zelf...\n"Diva kijkt je zwijgend aan..."',
+			},
+
+
+			toGame: {
+				text: "Je zult eerst Diva moeten verslaan om bij het einde te komen.\nVeel succes...",
+				end: true,
+			},
+
     }),
     []
   );
@@ -198,6 +203,17 @@ export default function DialogueIntro({ onDone }) {
 
     if (divaIntroduced) setAvatarsPhase("split");
   }, [nodeId, divaIntroduced]);
+
+
+	useEffect(() => {
+  if (!doneTyping) return;
+
+  if (nodeId === "divaNoMercy" || nodeId === "divaSilent") {
+    const t = setTimeout(() => setNodeId("toGame"), 600); // klein dramatisch momentje
+    return () => clearTimeout(t);
+  }
+	}, [nodeId, doneTyping]);
+
 
   // meow zodra divaIntro klaar is met typen
   useEffect(() => {

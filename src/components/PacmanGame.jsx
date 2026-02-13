@@ -634,7 +634,7 @@ export default function PacmanGame({ onWin }) {
             />
 
             {deathPhase === "text" || deathPhase === "button" ? (
-              <div style={styles.deathText}>"Muahahahahaha." <br></br><br></br><br></br> Je hebt verloren…</div>
+              <div style={styles.deathText}>Bericht van Diva: <br></br>"Muahahahahaha." <br></br><br></br><br></br> Je hebt verloren…</div>
             ) : null}
 
             {deathPhase === "button" ? (
@@ -655,7 +655,7 @@ export default function PacmanGame({ onWin }) {
         {countdown > 0 && (
           <div style={styles.countdownOverlay}>
             <div style={styles.countdownNumber}>{countdown}</div>
-            <div style={styles.countdownText}>Get ready…</div>
+            <div style={styles.countdownText}>Get ready...<br></br>Diva komt eraan...</div>
           </div>
         )}
 
