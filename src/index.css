@@ -1,47 +1,89 @@
-/* ===== Global full-bleed reset ===== */
-html, body, #root {
+/* ===============================
+   Global full-bleed + mobile fixes
+   =============================== */
+
+:root {
+  /* Safe-area insets (iOS notch etc.) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Belangrijk: gebruik 100% width, geen 100vw (100vw kan “shift” geven op mobiel) */
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
 }
 
+/* Zorgt dat er nooit wit “achter” je gradients zichtbaar wordt */
+html {
+  background: #ff77b7;
+  overflow-x: hidden;
+  overflow-y: hidden; /* default: geen scroll */
+}
+
+/* Body is full-bleed, geen bounce/overscroll, geen horizontale overflow */
 body {
-  background: transparent;        /* body hoeft geen kleur meer */
-  overflow: hidden;               /* no scroll */
+  background: #ff77b7;
+  overflow-x: hidden;
+  overflow-y: hidden; /* default: geen scroll */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
-/* iOS/Android “safe area” issues fix */
+/* Root vult altijd het scherm (svh = dynamic viewport height op mobiel) */
 #root {
-  min-height: 100svh;             /* <-- KEY: dynamic viewport height */
-  background: transparent;
-  display: block;
-}
-
-html {
-  background: #ff77b7;           /* <-- belangrijk: ook achter de body */
-  overflow: hidden;
-}
-
-/* voorkomt “witte rand” door default background */
-body, #root {
+  min-height: 100svh;
+  width: 100%;
   background: #ff77b7;
+  display: block;
+
+  /* Safe-area padding zodat content niet “tegen” de notch / randen klapt */
+  padding-top: var(--sat);
+  padding-right: var(--sar);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+
+  /* Voorkomt rare “subpixel” overflow op sommige devices */
+  overflow: hidden;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
-  overflow-x: hidden;
+/* ===============================
+   OPTIONAL: scroll alleen als nodig
+   Gebruik: zet className="allow-scroll"
+   op je stage container (bijv. DialogueIntro stage)
+   =============================== */
+.allow-scroll {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* jouw fade animatie mag blijven */
+/* ===============================
+   OPTIONAL: handige full-screen helper
+   (als je ooit className="screen" wilt gebruiken)
+   =============================== */
+.screen {
+  min-height: 100svh;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+/* jouw fade animatie blijft */
 @keyframes fadeIn {
   from { opacity: .25; transform: scale(1.01); }
   to   { opacity: 1;   transform: scale(1); }
 }
-
-

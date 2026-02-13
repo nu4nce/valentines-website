@@ -147,94 +147,109 @@ export default function DialogueIntro({ onDone }) {
 
   return (
     <div style={styles.stage} onPointerDown={skipTyping}>
-      <div style={styles.card}>
+			<div style={styles.card}>
+				<div style={styles.scrollArea}>
+					<div style={styles.avatarRow}>
+						<img
+							src={
+								doneTyping
+									? "/images/dennis_dicht.png"
+									: dennisMouthOpen
+									? "/images/dennis_open.png"
+									: "/images/dennis_dicht.png"
+							}
+							alt="Dennis"
+							style={styles.avatar}
+							draggable={false}
+						/>
+					</div>
 
-				<div style={styles.avatarRow}>
-					<img
-						src={
-							doneTyping
-								? "/images/dennis_dicht.png"
-								: dennisMouthOpen
-								? "/images/dennis_open.png"
-								: "/images/dennis_dicht.png"
-						}
-						alt="Dennis"
-						style={styles.avatar}
-						draggable={false}
-					/>
+					<div style={styles.textBox}>
+						<div style={styles.text}>
+							{typed.split("\n").map((line, i) => (
+								<div key={i}>{line}</div>
+							))}
+						</div>
+
+						{!doneTyping && skipHint && (
+							<div style={styles.tapHint}>Tik om sneller te gaan ✨</div>
+						)}
+					</div>
+
+					{showOptions ? (
+						<div style={styles.options}>
+							{node.options.map((o) => (
+								<button
+									key={o.label}
+									style={styles.optionBtn}
+									onClick={(e) => {
+										e.stopPropagation();
+										goNext(o.next);
+									}}
+								>
+									{o.label}
+								</button>
+							))}
+						</div>
+					) : null}
+
+					{showEndButton ? (
+						<div style={styles.endRow}>
+							<button
+								style={styles.mainBtn}
+								onClick={(e) => {
+									e.stopPropagation();
+									onDone?.();
+								}}
+							>
+								Verder →
+							</button>
+						</div>
+					) : null}
 				</div>
-
-
-        <div style={styles.textBox}>
-          <div style={styles.text}>
-            {typed.split("\n").map((line, i) => (
-              <div key={i}>{line}</div>
-            ))}
-          </div>
-
-          {!doneTyping && skipHint && (
-            <div style={styles.tapHint}>Tik om sneller te gaan ✨</div>
-          )}
-        </div>
-
-        {showOptions ? (
-          <div style={styles.options}>
-            {node.options.map((o) => (
-              <button
-                key={o.label}
-                style={styles.optionBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goNext(o.next);
-                }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {showEndButton ? (
-          <div style={styles.endRow}>
-            <button
-              style={styles.mainBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDone?.(); // -> ga naar Pacman
-              }}
-            >
-              Verder →
-            </button>
-          </div>
-        ) : null}
-      </div>
+			</div>
     </div>
   );
 }
 
 const styles = {
   stage: {
-    minHeight: "100svh",
-    width: "100%",
-    display: "grid",
-    placeItems: "center",
-    padding: 18,
+    height: "100svh",
+    width: "100vw",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingLeft: "max(14px, env(safe-area-inset-left))",
+    paddingRight: "max(14px, env(safe-area-inset-right))",
+    paddingTop: "max(14px, env(safe-area-inset-top))",
+    paddingBottom: "max(14px, env(safe-area-inset-bottom))",
     background:
       "radial-gradient(circle at top, #ffc1da, #ff77b7 35%, #ff3c8a 70%, #ff2d73)",
     overflow: "hidden",
   },
+
   card: {
-    width: "min(94vw, 620px)",
-    minHeight: "min(70svh, 520px)",
+    width: "min(96vw, 620px)",
+    height: "min(92svh, 760px)",      // 👈 card past op telefoon
     borderRadius: 28,
-    padding: 22,
+    padding: 0,                       // padding verhuisd naar scrollArea
     background: "rgba(255,255,255,.16)",
     backdropFilter: "blur(10px)",
     boxShadow: "0 18px 60px rgba(0,0,0,.28)",
-    display: "grid",
-    gap: 14,
     overflow: "hidden",
+    margin: "0 auto",
   },
+
+	scrollArea: {
+	height: "100%",
+	padding: 22,
+	display: "flex",
+	flexDirection: "column",
+	gap: 14,
+	overflowY: "auto",                 // 👈 alleen scrollen als nodig
+	WebkitOverflowScrolling: "touch",
+	},
+
   titlePill: {
     justifySelf: "center",
     padding: "10px 16px",
@@ -249,7 +264,7 @@ const styles = {
     padding: 18,
     background: "rgba(255,255,255,.08)",
     boxShadow: "inset 0 0 0 1px rgba(255,255,255,.20)",
-    minHeight: 220,
+    minHeight: 180,
     position: "relative",
   },
   text: {
@@ -273,6 +288,8 @@ const styles = {
   options: {
     display: "grid",
     gap: 10,
+    marginTop: "auto",                 // 👈 duw opties naar beneden als er ruimte is
+    paddingBottom: 6,
   },
   optionBtn: {
     border: "none",
@@ -289,7 +306,8 @@ const styles = {
   endRow: {
     display: "grid",
     placeItems: "center",
-    marginTop: 4,
+    marginTop: "auto",
+    paddingBottom: 6,
   },
   mainBtn: {
     height: 46,
@@ -303,20 +321,20 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 10px 24px rgba(0,0,0,.18)",
   },
+
 	avatarRow: {
 		display: "grid",
 		placeItems: "center",
-		marginTop: 6,
-		marginBottom: -6,
+		marginTop: 2,
 	},
-	avatar: {
-		width: "min(70vw, 260px)",
-		height: "auto",
-		objectFit: "contain",
-		filter: "drop-shadow(0 18px 30px rgba(0,0,0,.28))",
-		userSelect: "none",
-		pointerEvents: "none",
-	},
+  avatar: {
+    width: "min(72vw, 340px)",         // 👈 veel groter op mobiel
+    height: "auto",
+    objectFit: "contain",
+    filter: "drop-shadow(0 12px 22px rgba(0,0,0,.25))",
+    userSelect: "none",
+    pointerEvents: "none",
+  },
 
 
 };
