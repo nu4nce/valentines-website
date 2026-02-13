@@ -10,8 +10,8 @@ export default function StartScreen({ onStart, fadingOut }) {
       }}
     >
       <div style={styles.card}>
-        <h1 style={styles.title}>Dla mojego kochanie, najdroższa, skarbie.</h1>
-        <p style={styles.sub}>Ik heb iets kleins voor je gemaakt… baka.</p>
+        <h1 style={styles.title}>Dla mojego kochanie, najdroższa, skarbie. ❤️</h1>
+        <p style={styles.sub}>Ik heb iets kleins voor je gemaakt… bakayuro.</p>
 
         <button style={styles.btn} onClick={onStart}>
           Start

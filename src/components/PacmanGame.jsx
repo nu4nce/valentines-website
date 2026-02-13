@@ -689,13 +689,7 @@ export default function PacmanGame({ onWin }) {
 
 
         <div style={styles.controls}>
-          <div style={styles.hint}>WASD / Arrows • Swipe on phone</div>
-
-          {lost && (
-            <button style={styles.btn} onClick={restart}>
-              Retry 😤
-            </button>
-          )}
+          <div style={styles.hint}>WASD / Pijltjes • Swipe op telefoon</div>
         </div>
       </div>
     </div>
