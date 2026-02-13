@@ -176,8 +176,8 @@ const styles = {
   },
   card: {
     position: "relative",
-    width: "min(92vw, 520px)",
-    height: "min(70svh, 520px)",
+    width: "min(96vw, 720px)",
+    height: "min(86svh, 760px)",
     borderRadius: 28,
     padding: 22,
     background: "rgba(255,255,255,.16)",
@@ -198,7 +198,7 @@ const styles = {
   playground: {
     position: "relative",
     marginTop: 18,
-    height: "calc(100% - 90px)", // genoeg ruimte voor titel/sub + hint
+    height: "calc(100% - 110px)", // genoeg ruimte voor titel/sub + hint
     borderRadius: 22,
     overflow: "hidden",
     background: "rgba(255,255,255,.08)",

@@ -71,6 +71,8 @@ export default function PacmanGame({ onWin }) {
   // Convert to grid
   const initialGrid = useMemo(() => mapLines.map((r) => r.split("")), [mapLines]);
 
+  const [showWin, setShowWin] = useState(false);
+
   // Count dots
   const initialDotCount = useMemo(() => {
     let c = 0;
@@ -209,8 +211,8 @@ export default function PacmanGame({ onWin }) {
   // Calculate canvas size based on viewport
   useEffect(() => {
     const resize = () => {
-      const maxW = Math.min(window.innerWidth * 0.92, 520);
-      const maxH = Math.min(window.innerHeight * 0.72, 520);
+      const maxW = Math.min(window.innerWidth * 0.98, 980);
+      const maxH = Math.min(window.innerHeight * 0.82, 980);
 
       const cellW = Math.floor(maxW / cols);
       const cellH = Math.floor(maxH / rows);
@@ -529,7 +531,9 @@ export default function PacmanGame({ onWin }) {
             if (s.dotsLeft <= 0) {
               s.running = false;
               s.won = true;
-              setTimeout(() => onWin?.(), 600);
+
+              // show win overlay instead of auto-continue
+              setShowWin(true);
             }
           }
         }
@@ -586,7 +590,7 @@ export default function PacmanGame({ onWin }) {
     s.lost = false;
 
 
-
+    setShowWin(false);
     startCountdown(); // countdown again on retry
   };
 
@@ -664,6 +668,26 @@ export default function PacmanGame({ onWin }) {
           onTouchEnd={onTouchEnd}
         />
 
+        {showWin && (
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
+              <h2 style={styles.winTitle}>Je hebt gewonnen!</h2>
+              <p style={styles.winSub}>Diva is voor nu rustig...</p>
+
+              <button
+                style={styles.winBtn}
+                onClick={() => {
+                  setShowWin(false);
+                  onWin?.();
+                }}
+              >
+                Verder →
+              </button>
+            </div>
+          </div>
+        )}
+
+
         <div style={styles.controls}>
           <div style={styles.hint}>WASD / Arrows • Swipe on phone</div>
 
@@ -713,7 +737,7 @@ const styles = {
     fontSize: 12,
   },
   card: {
-    width: "min(92vw, 560px)",
+    width: "min(98vw, 980px)",
     borderRadius: 28,
     padding: 16,
     background: "rgba(255,255,255,.16)",
@@ -826,4 +850,51 @@ const styles = {
     boxShadow: "0 10px 26px rgba(0,0,0,.35)",
     animation: "fadeInUp 0.4s ease",
   },
+
+  overlay: {
+  position: "absolute",
+  inset: 0,
+  display: "grid",
+  placeItems: "center",
+  background: "rgba(0,0,0,.18)",
+  backdropFilter: "blur(6px)",
+  borderRadius: 22,
+  },
+
+  modal: {
+    width: "min(88%, 420px)",
+    padding: 18,
+    borderRadius: 22,
+    background: "rgba(255,255,255,.22)",
+    boxShadow: "0 18px 60px rgba(0,0,0,.28)",
+    textAlign: "center",
+    color: "white",
+  },
+
+  winTitle: {
+    margin: "4px 0 6px",
+    fontSize: "clamp(20px, 5vw, 30px)",
+    textShadow: "0 8px 22px rgba(0,0,0,.25)",
+    fontFamily: 'ui-serif, "Times New Roman", Georgia, serif',
+  },
+
+  winSub: {
+    margin: "0 0 12px",
+    color: "rgba(255,255,255,.9)",
+    fontSize: 13,
+  },
+
+  winBtn: {
+    height: 44,
+    padding: "0 18px",
+    border: "none",
+    borderRadius: 999,
+    background: "rgba(255,255,255,.92)",
+    color: "#ff2d73",
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: "0 10px 24px rgba(0,0,0,.18)",
+  },
+
+
 };

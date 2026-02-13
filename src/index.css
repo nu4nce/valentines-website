@@ -1,3 +1,22 @@
+/* ===== Global full-bleed reset ===== */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden; /* 🔒 no scrolling */
+  overscroll-behavior: none;
+}
+
+/* voorkomt “witte rand” door default background */
+body, #root {
+  background: #ff77b7;
+}
+
+/* jouw fade animatie mag blijven */
 @keyframes fadeIn {
   from { opacity: .25; transform: scale(1.01); }
   to   { opacity: 1;   transform: scale(1); }
