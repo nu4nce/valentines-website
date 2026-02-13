@@ -11,7 +11,6 @@ export default function DialogueIntro({ onDone }) {
         ],
       },
 
-      // Path 1
       meaning: {
         text: "Ik bedoel dat ik hier iets te veel moeite in heb gestoken",
         options: [{ label: "Je maakt me nieuwsgierig...", next: "purpose" }],
@@ -21,7 +20,6 @@ export default function DialogueIntro({ onDone }) {
         options: [{ label: "Verder...", next: "beforeWeGo" }],
       },
 
-      // Path 2
       whatMade: {
         text: "Iets wat ik niet in een appje kon stoppen.",
         options: [
@@ -36,20 +34,19 @@ export default function DialogueIntro({ onDone }) {
         options: [{ label: "Verder...", next: "beforeWeGo" }],
       },
 
-      // Merge point
       beforeWeGo: {
         text: "Voordat we verder gaan...\nWil ik dat je iemand ontmoet.",
         options: [{ label: "Oke...", next: "divaIntro" }],
       },
-			divaIntro: {
-				text: "Maak kennis met{p:150}.{p:150}.{p:150}.{p:650} Diva.",
-				options: [
-					{ label: "Is dat wie ik denk dat het is?", next: "divaNoMercy" },
-					{ label: "Mag ik haar aaien?", next: "divaSilent" },
-				],
-			},
 
-      // End nodes (exactly what you requested)
+      divaIntro: {
+        text: "Maak kennis met{p:150}.{p:150}.{p:150}.{p:650} Diva.",
+        options: [
+          { label: "Is dat wie ik denk dat het is?", next: "divaNoMercy" },
+          { label: "Mag ik haar aaien?", next: "divaSilent" },
+        ],
+      },
+
       divaNoMercy: {
         text: "Ja. En ze kent geen genade Martyna.",
         end: true,
@@ -62,308 +59,350 @@ export default function DialogueIntro({ onDone }) {
     []
   );
 
-	const [divaIntroduced, setDivaIntroduced] = useState(false); // blijft true nadat Diva is verschenen
-	const [avatarsPhase, setAvatarsPhase] = useState("solo");    // "solo" | "fadeOut" | "split"
+  // -----------------------
+  // bubble state (MOET BOVEN goNext!)
+  // -----------------------
+  const [divaBubble, setDivaBubble] = useState(""); // "meow" | "..." | ""
+  const showBubble = (text) => setDivaBubble(text);
 
-	const tokensRef = useRef([]);      // array van stukjes: {type:"text", value:"..."} of {type:"pause", ms:650}
-	const tokenIdxRef = useRef(0);
-	const charIdxRef = useRef(0);
+  // -----------------------
+  // Diva intro scene
+  // -----------------------
+  const [divaIntroduced, setDivaIntroduced] = useState(false);
+  const [avatarsPhase, setAvatarsPhase] = useState("solo"); // solo | fadeOut | split
+
+  // -----------------------
+  // typing system with pauses
+  // -----------------------
+  const tokensRef = useRef([]);
+  const tokenIdxRef = useRef(0);
+  const charIdxRef = useRef(0);
+  const timerRef = useRef(null);
 
   const [nodeId, setNodeId] = useState("start");
   const node = script[nodeId];
+
+  const [typed, setTyped] = useState("");
+  const [doneTyping, setDoneTyping] = useState(false);
+
+  // Dennis mouth
   const [dennisMouthOpen, setDennisMouthOpen] = useState(false);
   const talkRef = useRef(null);
 
-  // F
-  const [typed, setTyped] = useState("");
-  const [doneTyping, setDoneTyping] = useState(false);
-  const [skipHint, setSkipHint] = useState(true);
-
   const fullText = node?.text ?? "";
-  const idxRef = useRef(0);
-  const timerRef = useRef(null);
 
-	const parseTextWithPauses = (raw) => {
-  // split op {p:NUMBER}
-  const parts = [];
-  const re = /\{p:(\d+)\}/g;
-  let last = 0;
-  let m;
+  const parseTextWithPauses = (raw) => {
+    const parts = [];
+    const re = /\{p:(\d+)\}/g;
+    let last = 0;
+    let m;
 
-  while ((m = re.exec(raw)) !== null) {
-    const before = raw.slice(last, m.index);
-    if (before) parts.push({ type: "text", value: before });
-    parts.push({ type: "pause", ms: Number(m[1]) || 0 });
-    last = m.index + m[0].length;
-  }
+    while ((m = re.exec(raw)) !== null) {
+      const before = raw.slice(last, m.index);
+      if (before) parts.push({ type: "text", value: before });
+      parts.push({ type: "pause", ms: Number(m[1]) || 0 });
+      last = m.index + m[0].length;
+    }
 
-  const tail = raw.slice(last);
-  if (tail) parts.push({ type: "text", value: tail });
+    const tail = raw.slice(last);
+    if (tail) parts.push({ type: "text", value: tail });
 
-  return parts.length ? parts : [{ type: "text", value: raw }];
-	};
+    return parts.length ? parts : [{ type: "text", value: raw }];
+  };
 
+  useEffect(() => {
+    // reset typing
+    setTyped("");
+    setDoneTyping(false);
 
-	useEffect(() => {
-		// reset typing
-		setTyped("");
-		setDoneTyping(false);
-		setSkipHint(true);
+    tokensRef.current = parseTextWithPauses(fullText);
+    tokenIdxRef.current = 0;
+    charIdxRef.current = 0;
 
-		tokensRef.current = parseTextWithPauses(fullText);
-		tokenIdxRef.current = 0;
-		charIdxRef.current = 0;
+    // start talking while typing
+    setDennisMouthOpen(true);
+    if (talkRef.current) clearInterval(talkRef.current);
+    talkRef.current = setInterval(() => {
+      setDennisMouthOpen((v) => !v);
+    }, 120);
 
-		// start "talking" while typing
-		setDennisMouthOpen(true);
-		if (talkRef.current) clearInterval(talkRef.current);
-		talkRef.current = setInterval(() => {
-			setDennisMouthOpen((v) => !v);
-		}, 120);
+    const SPEED = 45;
 
-		const SPEED = 45; // ms per char
+    const step = () => {
+      const tokens = tokensRef.current;
+      const ti = tokenIdxRef.current;
 
-		const step = () => {
-			const tokens = tokensRef.current;
-			const ti = tokenIdxRef.current;
+      if (ti >= tokens.length) {
+        if (talkRef.current) clearInterval(talkRef.current);
+        talkRef.current = null;
+        setDennisMouthOpen(false);
+        setDoneTyping(true);
+        return;
+      }
 
-			if (ti >= tokens.length) {
-				// done
-				if (talkRef.current) clearInterval(talkRef.current);
-				talkRef.current = null;
-				setDennisMouthOpen(false);
-				setDoneTyping(true);
-				return;
-			}
+      const token = tokens[ti];
 
-			const token = tokens[ti];
+      if (token.type === "pause") {
+        tokenIdxRef.current += 1;
+        timerRef.current = setTimeout(step, token.ms);
+        return;
+      }
 
-			if (token.type === "pause") {
-				tokenIdxRef.current += 1;
-				timerRef.current = setTimeout(step, token.ms);
-				return;
-			}
+      // token.type === "text"
+      charIdxRef.current += 1;
+      const currentChunk = token.value.slice(0, charIdxRef.current);
 
-			// token.type === "text"
-			charIdxRef.current += 1;
-			const currentChunk = token.value.slice(0, charIdxRef.current);
+      let built = "";
+      for (let i = 0; i < ti; i++) {
+        if (tokens[i].type === "text") built += tokens[i].value;
+      }
+      built += currentChunk;
+      setTyped(built);
 
-			// build full typed from previous tokens + current partial
-			let built = "";
-			for (let i = 0; i < ti; i++) {
-				if (tokens[i].type === "text") built += tokens[i].value;
-			}
-			built += currentChunk;
-			setTyped(built);
+      if (charIdxRef.current >= token.value.length) {
+        tokenIdxRef.current += 1;
+        charIdxRef.current = 0;
+      }
 
-			if (charIdxRef.current >= token.value.length) {
-				tokenIdxRef.current += 1;
-				charIdxRef.current = 0;
-			}
+      timerRef.current = setTimeout(step, SPEED);
+    };
 
-			timerRef.current = setTimeout(step, SPEED);
-		};
+    timerRef.current = setTimeout(step, SPEED);
 
-		// start
-		timerRef.current = setTimeout(step, SPEED);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = null;
 
-		return () => {
-			if (timerRef.current) clearTimeout(timerRef.current);
-			timerRef.current = null;
+      if (talkRef.current) clearInterval(talkRef.current);
+      talkRef.current = null;
+    };
+  }, [fullText]);
 
-			if (talkRef.current) clearInterval(talkRef.current);
-			talkRef.current = null;
-		};
-	}, [fullText]);
+  // Diva intro “poof -> split” one-time
+  useEffect(() => {
+    if (!divaIntroduced && nodeId !== "divaIntro") {
+      setAvatarsPhase("solo");
+      return;
+    }
 
-	useEffect(() => {
-		// vóór Diva: Dennis blijft solo + centered
-		if (!divaIntroduced && nodeId !== "divaIntro") {
-			setAvatarsPhase("solo");
-			return;
-		}
+    if (nodeId === "divaIntro" && !divaIntroduced) {
+      setAvatarsPhase("fadeOut");
 
-		// zodra divaIntro start: doe één keer de “poof -> split” scene
-		if (nodeId === "divaIntro" && !divaIntroduced) {
-			setAvatarsPhase("fadeOut");
+      const t = setTimeout(() => {
+        setDivaIntroduced(true);
+        requestAnimationFrame(() => setAvatarsPhase("split"));
+      }, 420);
 
-			const t = setTimeout(() => {
-				setDivaIntroduced(true);
+      return () => clearTimeout(t);
+    }
 
-				// belangrijk: eerst renderen met Diva aanwezig,
-				// daarna in de volgende frame naar split zodat transitions werken
-				requestAnimationFrame(() => setAvatarsPhase("split"));
-			}, 420);
+    if (divaIntroduced) setAvatarsPhase("split");
+  }, [nodeId, divaIntroduced]);
 
-			return () => clearTimeout(t);
-		}
+  // meow zodra divaIntro klaar is met typen
+  useEffect(() => {
+    if (nodeId === "divaIntro" && doneTyping) {
+      showBubble("meow");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, doneTyping]);
 
-		// na introductie: altijd split blijven
-		if (divaIntroduced) {
-			setAvatarsPhase("split");
-		}
-	}, [nodeId, divaIntroduced]);
+  const skipTyping = () => {
+    if (doneTyping) return;
 
-	useEffect(() => {
-  // "meow" zodra divaIntro klaar is met typen
-  if (nodeId === "divaIntro" && doneTyping) {
-    showBubble("meow");
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [nodeId, doneTyping]);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
 
+    if (talkRef.current) clearInterval(talkRef.current);
+    talkRef.current = null;
 
+    setDennisMouthOpen(false);
+    setTyped(fullText.replace(/\{p:\d+\}/g, ""));
+    setDoneTyping(true);
+  };
 
-	const skipTyping = () => {
-		if (doneTyping) return;
+  // -----------------------
+  // bubble positioning (dynamic)
+  // -----------------------
+  const avatarsRef = useRef(null);
+  const divaImgRef = useRef(null);
+  const bubbleElRef = useRef(null);
+  const [bubblePos, setBubblePos] = useState({ left: 0, top: 0 });
 
-		if (timerRef.current) clearTimeout(timerRef.current);
-		timerRef.current = null;
+  useEffect(() => {
+    const update = () => {
+      if (!divaBubble) return;
+      if (!avatarsRef.current || !divaImgRef.current || !bubbleElRef.current) return;
 
-		if (talkRef.current) clearInterval(talkRef.current);
-		talkRef.current = null;
-		setDennisMouthOpen(false);
+      const a = avatarsRef.current.getBoundingClientRect();
+      const d = divaImgRef.current.getBoundingClientRect();
+      const b = bubbleElRef.current.getBoundingClientRect();
 
-		setTyped(fullText.replace(/\{p:\d+\}/g, "")); // tokens niet tonen
-		setDoneTyping(true);
-		setSkipHint(false);
-	};
+      // anchor boven Diva hoofd (tweakbaar)
+      const anchorX = d.left - a.left + d.width * 0.72; // iets meer rechts
+      const anchorY = d.top - a.top + d.height * 0.08;  // bovenkant
 
-	const goNext = (nextId) => {
-		// bubble reset bij elke keuze (node change)
-		if (nextId === "divaSilent") setDivaBubble("...");
-		else setDivaBubble("");
+      // we gebruiken translate(-50%, -100%) dus top = anchorY - offset
+      let left = anchorX;
+      let top = anchorY - 10;
 
-		setNodeId(nextId);
-	};
+      // clamp binnen avatars container
+      const pad = 10;
+      const minLeft = b.width / 2 + pad;
+      const maxLeft = a.width - b.width / 2 - pad;
+      left = Math.max(minLeft, Math.min(maxLeft, left));
 
+      const minTop = b.height + pad;
+      top = Math.max(minTop, top);
 
+      setBubblePos({ left, top });
+    };
 
-	// --- Diva "speech bubble" (blijft staan tot volgende keuze) ---
-	const [divaBubble, setDivaBubble] = useState(""); // "meow" | "..." | ""
-	const showBubble = (text) => {
-		setDivaBubble(text);
-	};
+    requestAnimationFrame(update);
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
 
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, [divaBubble, avatarsPhase, divaIntroduced, typed]);
 
+  // -----------------------
+  // navigation (bubble moet blijven tot keuze, maar reset bij volgende keuze)
+  // -----------------------
+  const goNext = (nextId) => {
+    // bubble reset bij elke keuze / schermwissel
+    if (nextId === "divaSilent") setDivaBubble("...");
+    else setDivaBubble("");
+
+    setNodeId(nextId);
+  };
 
   const showOptions = doneTyping && !node?.end && node?.options?.length;
   const showEndButton = doneTyping && node?.end;
 
   return (
     <div style={styles.stage}>
-			<div style={styles.card}>
-				<div style={styles.scrollArea}>
-					<div style={styles.avatarRow}>
-						<div style={styles.avatars}>
-							<div
-							style={{
-								...styles.avatars,
-								...(avatarsPhase === "split" ? styles.avatarsSplit : styles.avatarsSolo),
-							}}
-							>
-							<img
-								src={
-									doneTyping
-										? "/images/dennis_dicht.png"
-										: dennisMouthOpen
-										? "/images/dennis_open.png"
-										: "/images/dennis_dicht.png"
-								}
-								alt="Dennis"
-								draggable={false}
-								style={{
-									...styles.avatar,
-									...(avatarsPhase === "split" ? styles.avatarDennisSplit : styles.avatarDennisSolo),
+      <div style={styles.card}>
+        <div style={styles.scrollArea}>
+          <div style={styles.avatarRow}>
+            <div
+              ref={avatarsRef}
+              style={{
+                ...styles.avatars,
+                ...(avatarsPhase === "split" ? styles.avatarsSplit : styles.avatarsSolo),
+              }}
+            >
+              <img
+                src={
+                  doneTyping
+                    ? "/images/dennis_dicht.png"
+                    : dennisMouthOpen
+                    ? "/images/dennis_open.png"
+                    : "/images/dennis_dicht.png"
+                }
+                alt="Dennis"
+                draggable={false}
+                style={{
+                  ...styles.avatar,
+                  ...(avatarsPhase === "split"
+                    ? styles.avatarDennisSplit
+                    : styles.avatarDennisSolo),
+                  opacity: avatarsPhase === "fadeOut" ? 0 : 1,
+                  transform:
+                    avatarsPhase === "fadeOut"
+                      ? "translateY(6px) scale(.98)"
+                      : "translateY(0) scale(1)",
+                }}
+              />
 
-									opacity: avatarsPhase === "fadeOut" ? 0 : 1,
-									transform: avatarsPhase === "fadeOut"
-										? "translateY(6px) scale(.98)"
-										: "translateY(0) scale(1)",
-								}}
-							/>
+              {divaIntroduced && (
+                <img
+                  src={"/images/diva_dicht.png"}
+                  ref={divaImgRef}
+                  alt="Diva"
+                  draggable={false}
+                  style={{
+                    ...styles.avatar,
+                    ...styles.avatarDivaSplit,
+                    opacity: avatarsPhase === "split" ? 1 : 0,
+                    transform:
+                      avatarsPhase === "split"
+                        ? "translateY(0) scale(1)"
+                        : "translateY(6px) scale(.98)",
+                  }}
+                />
+              )}
 
-							{divaIntroduced && (
-								<div style={styles.divaWrap}>
-									{divaBubble && (
-										<div style={styles.divaBubble} aria-hidden="true">
-											{divaBubble}
-										</div>
-									)}
+              {divaIntroduced && divaBubble && (
+                <div
+                  ref={bubbleElRef}
+                  style={{
+                    ...styles.divaBubble,
+                    left: bubblePos.left,
+                    top: bubblePos.top,
+                    transform: "translate(-50%, -100%)",
+                  }}
+                >
+                  {divaBubble}
+                </div>
+              )}
+            </div>
+          </div>
 
-									<img
-										src={"/images/diva_dicht.png"}
-										alt="Diva"
-										draggable={false}
-										style={{
-											...styles.avatar,
-											...styles.avatarDivaSplit,
+          <div style={styles.textBox}>
+            <div style={styles.text}>
+              {typed.split("\n").map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
 
-											opacity: avatarsPhase === "split" ? 1 : 0,
-											transform:
-												avatarsPhase === "split"
-													? "translateY(0) scale(1)"
-													: "translateY(6px) scale(.98)",
-										}}
-									/>
-								</div>
-							)}
+            {!doneTyping && (
+              <button
+                style={styles.skipBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  skipTyping();
+                }}
+              >
+                Skip ⏭
+              </button>
+            )}
+          </div>
 
-						</div>
-						</div>
-					</div>
-					<div style={styles.textBox}>
-						<div style={styles.text}>
-							{typed.split("\n").map((line, i) => (
-								<div key={i}>{line}</div>
-							))}
-						</div>
+          {showOptions ? (
+            <div style={styles.options}>
+              {node.options.map((o) => (
+                <button
+                  key={o.label}
+                  style={styles.optionBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goNext(o.next);
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
-						{!doneTyping && (
-						<button
-							style={styles.skipBtn}
-							onClick={(e) => {
-								e.stopPropagation();
-								skipTyping();
-							}}
-						>
-							Skip ⏭
-						</button>
-						)}
-					</div>
-
-					{showOptions ? (
-						<div style={styles.options}>
-							{node.options.map((o) => (
-								<button
-									key={o.label}
-									style={styles.optionBtn}
-									onClick={(e) => {
-										e.stopPropagation();
-										goNext(o.next);
-									}}
-								>
-									{o.label}
-								</button>
-							))}
-						</div>
-					) : null}
-
-					{showEndButton ? (
-						<div style={styles.endRow}>
-							<button
-								style={styles.mainBtn}
-								onClick={(e) => {
-									e.stopPropagation();
-									onDone?.();
-								}}
-							>
-								Verder →
-							</button>
-						</div>
-					) : null}
-				</div>
-			</div>
+          {showEndButton ? (
+            <div style={styles.endRow}>
+              <button
+                style={styles.mainBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDone?.();
+                }}
+              >
+                Verder →
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -386,9 +425,9 @@ const styles = {
 
   card: {
     width: "min(96vw, 620px)",
-    height: "min(92svh, 760px)",      // 👈 card past op telefoon
+    height: "min(92svh, 760px)",
     borderRadius: 28,
-    padding: 0,                       // padding verhuisd naar scrollArea
+    padding: 0,
     background: "rgba(255,255,255,.16)",
     backdropFilter: "blur(10px)",
     boxShadow: "0 18px 60px rgba(0,0,0,.28)",
@@ -396,25 +435,75 @@ const styles = {
     margin: "0 auto",
   },
 
-	scrollArea: {
-	height: "100%",
-	padding: 22,
-	display: "flex",
-	flexDirection: "column",
-	gap: 14,
-	overflowY: "auto",                 // 👈 alleen scrollen als nodig
-	WebkitOverflowScrolling: "touch",
-	},
-
-  titlePill: {
-    justifySelf: "center",
-    padding: "10px 16px",
-    borderRadius: 999,
-    background: "rgba(255,255,255,.12)",
-    color: "rgba(255,255,255,.95)",
-    fontFamily: 'ui-serif, "Times New Roman", Georgia, serif',
-    textShadow: "0 8px 22px rgba(0,0,0,.25)",
+  scrollArea: {
+    height: "100%",
+    padding: 22,
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
   },
+
+  avatarRow: {
+    display: "grid",
+    placeItems: "center",
+    marginTop: 2,
+  },
+
+  avatar: {
+    width: "min(46vw, 230px)",
+    height: "auto",
+    objectFit: "contain",
+    filter: "drop-shadow(0 12px 22px rgba(0,0,0,.25))",
+    userSelect: "none",
+    pointerEvents: "none",
+    transition: "opacity 420ms ease, transform 420ms ease",
+  },
+
+  avatars: {
+    position: "relative",
+    width: "100%",
+    display: "grid",
+    alignItems: "end",
+    justifyItems: "center",
+    gap: 10,
+    paddingTop: 6,
+  },
+
+  avatarsSolo: {
+    gridTemplateColumns: "1fr",
+  },
+
+  avatarsSplit: {
+    gridTemplateColumns: "1fr 1fr 1fr",
+  },
+
+  avatarDennisSolo: {
+    gridColumn: 1,
+  },
+
+  avatarDennisSplit: {
+    gridColumn: 1,
+  },
+
+  avatarDivaSplit: {
+    gridColumn: 3,
+  },
+
+  divaBubble: {
+    position: "absolute",
+    padding: "8px 14px",
+    borderRadius: 999,
+    background: "rgba(255,255,255,.95)",
+    color: "#ff2d73",
+    fontWeight: 900,
+    fontSize: 14,
+    boxShadow: "0 10px 24px rgba(0,0,0,.18)",
+    pointerEvents: "none",
+    whiteSpace: "nowrap",
+  },
+
   textBox: {
     borderRadius: 22,
     padding: 18,
@@ -423,6 +512,7 @@ const styles = {
     minHeight: 180,
     position: "relative",
   },
+
   text: {
     color: "rgba(255,255,255,.95)",
     fontSize: "clamp(16px, 3.8vw, 20px)",
@@ -431,22 +521,14 @@ const styles = {
     whiteSpace: "pre-wrap",
     userSelect: "none",
   },
-  tapHint: {
-    position: "absolute",
-    right: 12,
-    bottom: 10,
-    fontSize: 12,
-    color: "rgba(255,255,255,.8)",
-    background: "rgba(255,255,255,.10)",
-    padding: "6px 10px",
-    borderRadius: 999,
-  },
+
   options: {
     display: "grid",
     gap: 10,
-    marginTop: "auto",                 // 👈 duw opties naar beneden als er ruimte is
+    marginTop: "auto",
     paddingBottom: 6,
   },
+
   optionBtn: {
     border: "none",
     borderRadius: 18,
@@ -459,12 +541,14 @@ const styles = {
     boxShadow: "0 10px 24px rgba(0,0,0,.18)",
     textAlign: "left",
   },
+
   endRow: {
     display: "grid",
     placeItems: "center",
     marginTop: "auto",
     paddingBottom: 6,
   },
+
   mainBtn: {
     height: 46,
     padding: "0 22px",
@@ -478,93 +562,18 @@ const styles = {
     boxShadow: "0 10px 24px rgba(0,0,0,.18)",
   },
 
-	avatarRow: {
-		display: "grid",
-		placeItems: "center",
-		marginTop: 2,
-	},
-
-	avatar: {
-		width: "min(46vw, 230px)",   // was 38vw/170px
-		height: "auto",
-		objectFit: "contain",
-		filter: "drop-shadow(0 12px 22px rgba(0,0,0,.25))",
-		userSelect: "none",
-		pointerEvents: "none",
-		transition: "opacity 420ms ease, transform 420ms ease",
-	},
-
-
-
-	avatars: {
-		width: "100%",
-		display: "grid",
-		alignItems: "end",
-		justifyItems: "center",
-		gap: 10,
-		paddingTop: 6,
-	},
-
-	avatarsSolo: {
-		gridTemplateColumns: "1fr",
-	},
-
-	avatarsSplit: {
-		gridTemplateColumns: "1fr 1fr 1fr", // Dennis op 1/3, Diva op 2/3
-	},
-
-	avatarDennisSolo: {
-		gridColumn: 1, // centered (want 1 kolom)
-	},
-
-	avatarDennisSplit: {
-		gridColumn: 1, // links (1/3)
-	},
-
-	avatarDivaSplit: {
-		gridColumn: 3, // rechts (2/3)
-	},
-
-
   skipBtn: {
-		position: "absolute",
-		right: 12,
-		bottom: 10,
-		fontSize: 13,
-		background: "rgba(255,255,255,.18)",
-		color: "white",
-		border: "none",
-		padding: "8px 14px",
-		borderRadius: 999,
-		cursor: "pointer",
-		backdropFilter: "blur(6px)",
-		boxShadow: "0 6px 14px rgba(0,0,0,.18)",
-	},
-
-	divaWrap: {
-		position: "relative",
-		gridColumn: 3,         // Diva blijft op 2/3
-		justifySelf: "center",
-		alignSelf: "end",
-	},
-
-	divaBubble: {
-		position: "absolute",
-		top: -14,              // omhoog boven hoofd
-		left: "72%",           // <-- meer naar rechts (tweak gerust 65%-85%)
-		transform: "translate(-50%, -100%)",
-		padding: "8px 14px",
-		borderRadius: 999,
-		background: "rgba(255,255,255,.95)",
-		color: "#ff2d73",
-		fontWeight: 900,
-		fontSize: 14,
-		boxShadow: "0 10px 24px rgba(0,0,0,.18)",
-		pointerEvents: "none",
-		whiteSpace: "nowrap",
-	},
-
-
-
-
+    position: "absolute",
+    right: 12,
+    bottom: 10,
+    fontSize: 13,
+    background: "rgba(255,255,255,.18)",
+    color: "white",
+    border: "none",
+    padding: "8px 14px",
+    borderRadius: 999,
+    cursor: "pointer",
+    backdropFilter: "blur(6px)",
+    boxShadow: "0 6px 14px rgba(0,0,0,.18)",
+  },
 };
