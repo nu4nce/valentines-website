@@ -17,13 +17,13 @@ export default function DialogueIntro({ onDone }) {
         options: [{ label: "Je maakt me nieuwsgierig...", next: "purpose" }],
       },
       purpose: {
-        text: "Dat was precies de bedoeling :)",
+        text: "u better be fella.",
         options: [{ label: "Verder...", next: "beforeWeGo" }],
       },
 
       // Path 2
       whatMade: {
-        text: "Iets wat ik niet in een appje kon stoppen",
+        text: "Iets wat ik niet in een appje kon stoppen.",
         options: [
           {
             label: "Wauw Dennis je bent zo handsome en cool dit is zo vet gemaakt",
@@ -32,7 +32,7 @@ export default function DialogueIntro({ onDone }) {
         ],
       },
       thanksIGuess: {
-        text: "Ja klopt thanks I guess 😳😳\n(op een nonchalante manier)\n(ik ben 6'1 btw)",
+        text: "Ja klopt thanks I guess 🙄🙄\n(op een nonchalante manier)\n(ik ben 6'1 btw)",
         options: [{ label: "Verder...", next: "beforeWeGo" }],
       },
 
@@ -41,13 +41,13 @@ export default function DialogueIntro({ onDone }) {
         text: "Voordat we verder gaan...\nWil ik dat je iemand ontmoet.",
         options: [{ label: "Oke...", next: "divaIntro" }],
       },
-      divaIntro: {
-        text: 'Maak kennis met... Diva.',
-        options: [
-          { label: "Is dat wat ik denk dat het is?", next: "divaNoMercy" },
-          { label: "Mag ik haar aaien?", next: "divaSilent" },
-        ],
-      },
+			divaIntro: {
+				text: "Maak kennis met{p:150}.{p:150}.{p:150}.{p:650} Diva.",
+				options: [
+					{ label: "Is dat wie ik denk dat het is?", next: "divaNoMercy" },
+					{ label: "Mag ik haar aaien?", next: "divaSilent" },
+				],
+			},
 
       // End nodes (exactly what you requested)
       divaNoMercy: {
@@ -62,12 +62,19 @@ export default function DialogueIntro({ onDone }) {
     []
   );
 
+	const [divaIntroduced, setDivaIntroduced] = useState(false); // blijft true nadat Diva is verschenen
+	const [avatarsPhase, setAvatarsPhase] = useState("solo");    // "solo" | "fadeOut" | "split"
+
+	const tokensRef = useRef([]);      // array van stukjes: {type:"text", value:"..."} of {type:"pause", ms:650}
+	const tokenIdxRef = useRef(0);
+	const charIdxRef = useRef(0);
+
   const [nodeId, setNodeId] = useState("start");
   const node = script[nodeId];
   const [dennisMouthOpen, setDennisMouthOpen] = useState(false);
   const talkRef = useRef(null);
 
-  // Typewriter
+  // F
   const [typed, setTyped] = useState("");
   const [doneTyping, setDoneTyping] = useState(false);
   const [skipHint, setSkipHint] = useState(true);
@@ -76,12 +83,36 @@ export default function DialogueIntro({ onDone }) {
   const idxRef = useRef(0);
   const timerRef = useRef(null);
 
+	const parseTextWithPauses = (raw) => {
+  // split op {p:NUMBER}
+  const parts = [];
+  const re = /\{p:(\d+)\}/g;
+  let last = 0;
+  let m;
+
+  while ((m = re.exec(raw)) !== null) {
+    const before = raw.slice(last, m.index);
+    if (before) parts.push({ type: "text", value: before });
+    parts.push({ type: "pause", ms: Number(m[1]) || 0 });
+    last = m.index + m[0].length;
+  }
+
+  const tail = raw.slice(last);
+  if (tail) parts.push({ type: "text", value: tail });
+
+  return parts.length ? parts : [{ type: "text", value: raw }];
+	};
+
+
 	useEffect(() => {
-		// reset typing when node changes
+		// reset typing
 		setTyped("");
 		setDoneTyping(false);
 		setSkipHint(true);
-		idxRef.current = 0;
+
+		tokensRef.current = parseTextWithPauses(fullText);
+		tokenIdxRef.current = 0;
+		charIdxRef.current = 0;
 
 		// start "talking" while typing
 		setDennisMouthOpen(true);
@@ -90,29 +121,54 @@ export default function DialogueIntro({ onDone }) {
 			setDennisMouthOpen((v) => !v);
 		}, 120);
 
-		const SPEED = 50; // ms per char
+		const SPEED = 45; // ms per char
 
-		if (timerRef.current) clearInterval(timerRef.current);
-		timerRef.current = setInterval(() => {
-			idxRef.current += 1;
-			const next = fullText.slice(0, idxRef.current);
-			setTyped(next);
+		const step = () => {
+			const tokens = tokensRef.current;
+			const ti = tokenIdxRef.current;
 
-			if (idxRef.current >= fullText.length) {
-				// stop typing
-				clearInterval(timerRef.current);
-				timerRef.current = null;
-				setDoneTyping(true);
-
-				// stop talking
+			if (ti >= tokens.length) {
+				// done
 				if (talkRef.current) clearInterval(talkRef.current);
 				talkRef.current = null;
 				setDennisMouthOpen(false);
+				setDoneTyping(true);
+				return;
 			}
-		}, SPEED);
+
+			const token = tokens[ti];
+
+			if (token.type === "pause") {
+				tokenIdxRef.current += 1;
+				timerRef.current = setTimeout(step, token.ms);
+				return;
+			}
+
+			// token.type === "text"
+			charIdxRef.current += 1;
+			const currentChunk = token.value.slice(0, charIdxRef.current);
+
+			// build full typed from previous tokens + current partial
+			let built = "";
+			for (let i = 0; i < ti; i++) {
+				if (tokens[i].type === "text") built += tokens[i].value;
+			}
+			built += currentChunk;
+			setTyped(built);
+
+			if (charIdxRef.current >= token.value.length) {
+				tokenIdxRef.current += 1;
+				charIdxRef.current = 0;
+			}
+
+			timerRef.current = setTimeout(step, SPEED);
+		};
+
+		// start
+		timerRef.current = setTimeout(step, SPEED);
 
 		return () => {
-			if (timerRef.current) clearInterval(timerRef.current);
+			if (timerRef.current) clearTimeout(timerRef.current);
 			timerRef.current = null;
 
 			if (talkRef.current) clearInterval(talkRef.current);
@@ -120,27 +176,76 @@ export default function DialogueIntro({ onDone }) {
 		};
 	}, [fullText]);
 
+	useEffect(() => {
+		// vóór Diva: Dennis blijft solo + centered
+		if (!divaIntroduced && nodeId !== "divaIntro") {
+			setAvatarsPhase("solo");
+			return;
+		}
+
+		// zodra divaIntro start: doe één keer de “poof -> split” scene
+		if (nodeId === "divaIntro" && !divaIntroduced) {
+			setAvatarsPhase("fadeOut");
+
+			const t = setTimeout(() => {
+				setDivaIntroduced(true);
+
+				// belangrijk: eerst renderen met Diva aanwezig,
+				// daarna in de volgende frame naar split zodat transitions werken
+				requestAnimationFrame(() => setAvatarsPhase("split"));
+			}, 420);
+
+			return () => clearTimeout(t);
+		}
+
+		// na introductie: altijd split blijven
+		if (divaIntroduced) {
+			setAvatarsPhase("split");
+		}
+	}, [nodeId, divaIntroduced]);
+
+	useEffect(() => {
+  // "meow" zodra divaIntro klaar is met typen
+  if (nodeId === "divaIntro" && doneTyping) {
+    showBubble("meow");
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [nodeId, doneTyping]);
+
+
 
 	const skipTyping = () => {
 		if (doneTyping) return;
 
-		if (timerRef.current) clearInterval(timerRef.current);
+		if (timerRef.current) clearTimeout(timerRef.current);
 		timerRef.current = null;
 
 		if (talkRef.current) clearInterval(talkRef.current);
 		talkRef.current = null;
-
 		setDennisMouthOpen(false);
-		setTyped(fullText);
+
+		setTyped(fullText.replace(/\{p:\d+\}/g, "")); // tokens niet tonen
 		setDoneTyping(true);
 		setSkipHint(false);
 	};
 
+	const goNext = (nextId) => {
+		// bubble reset bij elke keuze (node change)
+		if (nextId === "divaSilent") setDivaBubble("...");
+		else setDivaBubble("");
+
+		setNodeId(nextId);
+	};
 
 
-  const goNext = (nextId) => {
-    setNodeId(nextId);
-  };
+
+	// --- Diva "speech bubble" (blijft staan tot volgende keuze) ---
+	const [divaBubble, setDivaBubble] = useState(""); // "meow" | "..." | ""
+	const showBubble = (text) => {
+		setDivaBubble(text);
+	};
+
+
 
   const showOptions = doneTyping && !node?.end && node?.options?.length;
   const showEndButton = doneTyping && node?.end;
@@ -150,20 +255,63 @@ export default function DialogueIntro({ onDone }) {
 			<div style={styles.card}>
 				<div style={styles.scrollArea}>
 					<div style={styles.avatarRow}>
-						<img
-							src={
-								doneTyping
-									? "/images/dennis_dicht.png"
-									: dennisMouthOpen
-									? "/images/dennis_open.png"
-									: "/images/dennis_dicht.png"
-							}
-							alt="Dennis"
-							style={styles.avatar}
-							draggable={false}
-						/>
-					</div>
+						<div style={styles.avatars}>
+							<div
+							style={{
+								...styles.avatars,
+								...(avatarsPhase === "split" ? styles.avatarsSplit : styles.avatarsSolo),
+							}}
+							>
+							<img
+								src={
+									doneTyping
+										? "/images/dennis_dicht.png"
+										: dennisMouthOpen
+										? "/images/dennis_open.png"
+										: "/images/dennis_dicht.png"
+								}
+								alt="Dennis"
+								draggable={false}
+								style={{
+									...styles.avatar,
+									...(avatarsPhase === "split" ? styles.avatarDennisSplit : styles.avatarDennisSolo),
 
+									opacity: avatarsPhase === "fadeOut" ? 0 : 1,
+									transform: avatarsPhase === "fadeOut"
+										? "translateY(6px) scale(.98)"
+										: "translateY(0) scale(1)",
+								}}
+							/>
+
+							{divaIntroduced && (
+								<div style={styles.divaWrap}>
+									{divaBubble && (
+										<div style={styles.divaBubble} aria-hidden="true">
+											{divaBubble}
+										</div>
+									)}
+
+									<img
+										src={"/images/diva_dicht.png"}
+										alt="Diva"
+										draggable={false}
+										style={{
+											...styles.avatar,
+											...styles.avatarDivaSplit,
+
+											opacity: avatarsPhase === "split" ? 1 : 0,
+											transform:
+												avatarsPhase === "split"
+													? "translateY(0) scale(1)"
+													: "translateY(6px) scale(.98)",
+										}}
+									/>
+								</div>
+							)}
+
+						</div>
+						</div>
+					</div>
 					<div style={styles.textBox}>
 						<div style={styles.text}>
 							{typed.split("\n").map((line, i) => (
@@ -335,29 +483,88 @@ const styles = {
 		placeItems: "center",
 		marginTop: 2,
 	},
-  avatar: {
-    width: "min(72vw, 340px)",         // 👈 veel groter op mobiel
-    height: "auto",
-    objectFit: "contain",
-    filter: "drop-shadow(0 12px 22px rgba(0,0,0,.25))",
-    userSelect: "none",
-    pointerEvents: "none",
-  },
-	
-  skipBtn: {
-  position: "absolute",
-  right: 12,
-  bottom: 10,
-  fontSize: 13,
-  background: "rgba(255,255,255,.18)",
-  color: "white",
-  border: "none",
-  padding: "8px 14px",
-  borderRadius: 999,
-  cursor: "pointer",
-  backdropFilter: "blur(6px)",
-  boxShadow: "0 6px 14px rgba(0,0,0,.18)",
+
+	avatar: {
+		width: "min(46vw, 230px)",   // was 38vw/170px
+		height: "auto",
+		objectFit: "contain",
+		filter: "drop-shadow(0 12px 22px rgba(0,0,0,.25))",
+		userSelect: "none",
+		pointerEvents: "none",
+		transition: "opacity 420ms ease, transform 420ms ease",
 	},
+
+
+
+	avatars: {
+		width: "100%",
+		display: "grid",
+		alignItems: "end",
+		justifyItems: "center",
+		gap: 10,
+		paddingTop: 6,
+	},
+
+	avatarsSolo: {
+		gridTemplateColumns: "1fr",
+	},
+
+	avatarsSplit: {
+		gridTemplateColumns: "1fr 1fr 1fr", // Dennis op 1/3, Diva op 2/3
+	},
+
+	avatarDennisSolo: {
+		gridColumn: 1, // centered (want 1 kolom)
+	},
+
+	avatarDennisSplit: {
+		gridColumn: 1, // links (1/3)
+	},
+
+	avatarDivaSplit: {
+		gridColumn: 3, // rechts (2/3)
+	},
+
+
+  skipBtn: {
+		position: "absolute",
+		right: 12,
+		bottom: 10,
+		fontSize: 13,
+		background: "rgba(255,255,255,.18)",
+		color: "white",
+		border: "none",
+		padding: "8px 14px",
+		borderRadius: 999,
+		cursor: "pointer",
+		backdropFilter: "blur(6px)",
+		boxShadow: "0 6px 14px rgba(0,0,0,.18)",
+	},
+
+	divaWrap: {
+		position: "relative",
+		gridColumn: 3,         // Diva blijft op 2/3
+		justifySelf: "center",
+		alignSelf: "end",
+	},
+
+	divaBubble: {
+		position: "absolute",
+		top: -14,              // omhoog boven hoofd
+		left: "72%",           // <-- meer naar rechts (tweak gerust 65%-85%)
+		transform: "translate(-50%, -100%)",
+		padding: "8px 14px",
+		borderRadius: 999,
+		background: "rgba(255,255,255,.95)",
+		color: "#ff2d73",
+		fontWeight: 900,
+		fontSize: 14,
+		boxShadow: "0 10px 24px rgba(0,0,0,.18)",
+		pointerEvents: "none",
+		whiteSpace: "nowrap",
+	},
+
+
 
 
 };
