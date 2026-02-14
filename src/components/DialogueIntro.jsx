@@ -13,15 +13,15 @@ export default function DialogueIntro({ onDone }) {
 
       meaning: {
         text: "Ik bedoel dat ik hier iets te veel moeite in heb gestoken",
-        options: [{ label: "Je maakt me nieuwsgierig...", next: "purpose" }],
+        options: [{ label: "Je maakt me nieuwsgierig... en je bent zo tuff dennis", next: "purpose" }],
       },
       purpose: {
-        text: "u better be fella.",
+        text: "Heh... ja klopt. Bakayuro.",
         options: [{ label: "Verder...", next: "beforeWeGo" }],
       },
 
       whatMade: {
-        text: "Iets wat ik niet in een appje kon stoppen.",
+        text: "Iets wat ik niet zomaar in een appje kon stoppen.",
         options: [
           {
             label: "Wauw Dennis je bent zo handsome en cool dit is zo vet gemaakt",
@@ -47,12 +47,14 @@ export default function DialogueIntro({ onDone }) {
         ],
       },
 
-			divaNoMercy: {
-				text: "Ja. En ze kent geen genade Martyna.",
-			},
-			divaSilent: {
-				text: 'Dat beslist ze zelf...\n"Diva kijkt je zwijgend aan..."',
-			},
+      divaNoMercy: {
+        text: "Ja. En ze kent geen genade Martyna.",
+        options: [{ label: "Verder →", next: "toGame" }],
+      },
+      divaSilent: {
+        text: 'Dat beslist ze zelf...\n"Diva kijkt je zwijgend aan..."',
+        options: [{ label: "Verder →", next: "toGame" }],
+      },
 
 
 			toGame: {
@@ -203,17 +205,6 @@ export default function DialogueIntro({ onDone }) {
 
     if (divaIntroduced) setAvatarsPhase("split");
   }, [nodeId, divaIntroduced]);
-
-
-	useEffect(() => {
-  if (!doneTyping) return;
-
-  if (nodeId === "divaNoMercy" || nodeId === "divaSilent") {
-    const t = setTimeout(() => setNodeId("toGame"), 600); // klein dramatisch momentje
-    return () => clearTimeout(t);
-  }
-	}, [nodeId, doneTyping]);
-
 
   // meow zodra divaIntro klaar is met typen
   useEffect(() => {

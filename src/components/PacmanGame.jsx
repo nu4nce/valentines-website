@@ -119,7 +119,7 @@ export default function PacmanGame({ onWin }) {
 
     const s = stateRef.current;
     s.running = false; // pause game during countdown
-    setCountdown(1);
+    setCountdown(5);
 
     countdownTimerRef.current = setInterval(() => {
       setCountdown((c) => {

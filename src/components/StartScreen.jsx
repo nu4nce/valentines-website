@@ -33,7 +33,7 @@ export default function StartScreen({ onStart, onSkipToSlideshow, fadingOut }) {
         </h1>
 
         <p style={styles.sub}>
-          Ik heb iets kleins voor je gemaakt… bakayuro.
+          Ik heb iets kleins voor je gemaakt… balaap.
         </p>
 
         <button style={styles.btn} onClick={onStart}>

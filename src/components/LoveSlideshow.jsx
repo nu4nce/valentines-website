@@ -272,7 +272,7 @@ export default function LoveSlideshow({ onRestart }) {
           {/* FaceTime */}
           <div style={styles.statBlock}>
             <div style={styles.statHead}>Wie slaapt eerder tijdens videobellen?</div>
-            <div style={styles.statValue}>Martyna 🏆</div>
+            <div style={styles.statValue}>Martyna 🏆 (gefeliciteerd!) </div>
           </div>
 
           {/* Compatibiliteit */}
@@ -302,7 +302,7 @@ export default function LoveSlideshow({ onRestart }) {
           </div>
 
           <div style={styles.footerNote}>
-            (Deze pagina blijft altijd updaten 😌)
+            (Deze pagina blijft altijd updaten btw 😌)
           </div>
         </div>
       </div>
@@ -311,6 +311,7 @@ export default function LoveSlideshow({ onRestart }) {
         <div style={styles.endingText}>
           <div>Je hebt het gehaald. 💗</div>
           <div>Bedankt voor het spelen.</div>
+          <div>Ik hou zoveel van je. 😻😻</div>
         </div>
 
         <button
