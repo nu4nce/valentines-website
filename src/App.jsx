@@ -6,19 +6,35 @@ import StartScreen from "./components/StartScreen";
 import DialogueIntro from "./components/DialogueIntro";
 
 export default function App() {
-  const [step, setStep] = useState("start"); // start | gate | game | slideshow | dialogue
+  const [step, setStep] = useState("start");
   const [fadeStartOut, setFadeStartOut] = useState(false);
 
   const start = () => {
-    setFadeStartOut(true); // triggers 2s fade
+    setFadeStartOut(true);
     setTimeout(() => setStep("gate"), 2000);
   };
 
-  if (step === "slideshow") return <LoveSlideshow />;
-  if (step === "game") return <PacmanGame onWin={() => setStep("slideshow")} />;
+  if (step === "slideshow")
+    return (
+      <LoveSlideshow
+        onRestart={() => setStep("start")}
+      />
+    );
 
-  if (step === "gate") return <ValentineGate onYes={() => setStep("dialogue")} />;
-  if (step === "dialogue") return <DialogueIntro onDone={() => setStep("game")} />;
-  // step === "start"
-  return <StartScreen onStart={start} fadingOut={fadeStartOut} />;
+  if (step === "game")
+    return <PacmanGame onWin={() => setStep("slideshow")} />;
+
+  if (step === "dialogue")
+    return <DialogueIntro onDone={() => setStep("game")} />;
+
+  if (step === "gate")
+    return <ValentineGate onYes={() => setStep("dialogue")} />;
+
+  return (
+    <StartScreen
+      onStart={start}
+      onSkipToSlideshow={() => setStep("slideshow")}
+      fadingOut={fadeStartOut}
+    />
+  );
 }

@@ -1,6 +1,24 @@
-import React from "react";
+import React, { useRef } from "react";
 
-export default function StartScreen({ onStart, fadingOut }) {
+export default function StartScreen({ onStart, onSkipToSlideshow, fadingOut }) {
+  const tapCount = useRef(0);
+  const tapTimer = useRef(null);
+
+  const handleSecretTap = () => {
+    tapCount.current += 1;
+
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+
+    tapTimer.current = setTimeout(() => {
+      tapCount.current = 0;
+    }, 1500); // moet binnen 1.5s gebeuren
+
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      onSkipToSlideshow?.();
+    }
+  };
+
   return (
     <div
       style={{
@@ -10,13 +28,17 @@ export default function StartScreen({ onStart, fadingOut }) {
       }}
     >
       <div style={styles.card}>
-        <h1 style={styles.title}>Dla mojego kochanie, najdroższa, skarbie. ❤️</h1>
-        <p style={styles.sub}>Ik heb iets kleins voor je gemaakt… bakayuro.</p>
+        <h1 style={styles.title} onClick={handleSecretTap}>
+          Dla mojego kochanie, najdroższa, skarbie. ❤️
+        </h1>
+
+        <p style={styles.sub}>
+          Ik heb iets kleins voor je gemaakt… bakayuro.
+        </p>
 
         <button style={styles.btn} onClick={onStart}>
-          Start
+          Start 💗
         </button>
-
       </div>
     </div>
   );
@@ -46,6 +68,7 @@ const styles = {
     fontSize: "clamp(24px, 6vw, 38px)",
     textShadow: "0 8px 22px rgba(0,0,0,.25)",
     fontFamily: 'ui-serif, "Times New Roman", Georgia, serif',
+    cursor: "pointer",
   },
   sub: {
     margin: "0 0 18px",
@@ -63,11 +86,5 @@ const styles = {
     fontSize: 16,
     cursor: "pointer",
     boxShadow: "0 10px 24px rgba(0,0,0,.18)",
-    transform: "translateY(0px)",
-  },
-  hint: {
-    marginTop: 14,
-    color: "rgba(255,255,255,.85)",
-    fontSize: 12,
   },
 };

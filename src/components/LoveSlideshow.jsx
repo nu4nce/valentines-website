@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
  * - crossfade + "page-like" 3D tilt
  * + aparte stats sectie onderaan (scroll)
  */
-export default function LoveSlideshow() {
+export default function LoveSlideshow({ onRestart }) {
   // Pas hier je foto’s aan (uit public/images)
   const slides = useMemo(
     () => [
@@ -244,11 +244,11 @@ export default function LoveSlideshow() {
       {/* stats section (scroll down) */}
       <div style={styles.statsSection}>
         <div style={styles.statsCard}>
-          <h2 style={styles.statsTitle}>Stats ✨</h2>
+          <h2 style={styles.statsTitle}>Onze statistieken </h2>
 
           {/* Samen sinds */}
           <div style={styles.statBlock}>
-            <div style={styles.statHead}>⏳ Samen sinds 26 juni 2025</div>
+            <div style={styles.statHead}>Dit is hoelang we al samen zijn 💗:</div>
             <div style={styles.timerRow}>
               <div style={styles.timerCell}>
                 <div style={styles.timerNum}>{together.days}</div>
@@ -271,7 +271,7 @@ export default function LoveSlideshow() {
 
           {/* FaceTime */}
           <div style={styles.statBlock}>
-            <div style={styles.statHead}>💤 Wie eerder slaapt tijdens FaceTime</div>
+            <div style={styles.statHead}>Wie slaapt eerder tijdens videobellen?</div>
             <div style={styles.statValue}>Martyna 🏆</div>
           </div>
 
@@ -287,8 +287,8 @@ export default function LoveSlideshow() {
 
             {compState === "calculating" && (
               <div style={styles.calcBox}>
-                <div style={styles.calcLine}>Calculating…</div>
-                <div style={styles.calcSub}>Even kijken hoor…</div>
+                <div style={styles.calcLine}>Berekenen...</div>
+                <div style={styles.calcSub}>Hmm effe koekeloeren...</div>
                 <div style={styles.spinner} aria-hidden="true" />
               </div>
             )}
@@ -302,9 +302,23 @@ export default function LoveSlideshow() {
           </div>
 
           <div style={styles.footerNote}>
-            (Deze pagina blijft tellen zolang je ‘m open hebt 😌)
+            (Deze pagina blijft altijd updaten 😌)
           </div>
         </div>
+      </div>
+
+      <div style={styles.endingSection}>
+        <div style={styles.endingText}>
+          <div>Je hebt het gehaald. 💗</div>
+          <div>Bedankt voor het spelen.</div>
+        </div>
+
+        <button
+          style={styles.endingBtn}
+          onClick={onRestart}
+        >
+          Klik hier om opnieuw te spelen
+        </button>
       </div>
     </div>
   );
@@ -575,6 +589,49 @@ const styles = {
     textAlign: "center",
     paddingTop: 2,
   },
+  restartBtn: {
+    marginTop: 10,
+    height: 44,
+    border: "none",
+    borderRadius: 999,
+    background: "rgba(255,255,255,.75)",
+    color: "#ff2d73",
+    fontWeight: 800,
+    fontSize: 14,
+    cursor: "pointer",
+    boxShadow: "0 8px 20px rgba(0,0,0,.18)",
+  },
+
+  endingSection: {
+    marginTop: 60,
+    paddingTop: 40,
+    paddingBottom: 40,
+    borderTop: "1px solid rgba(255,255,255,.25)",
+    textAlign: "center",
+  },
+
+  endingText: {
+    color: "white",
+    fontSize: "clamp(16px, 4vw, 22px)",
+    fontFamily: 'ui-serif, "Times New Roman", Georgia, serif',
+    marginBottom: 20,
+    lineHeight: 1.6,
+  },
+
+  endingBtn: {
+    height: 48,
+    padding: "0 26px",
+    border: "none",
+    borderRadius: 999,
+    background: "rgba(255,255,255,.92)",
+    color: "#ff2d73",
+    fontWeight: 800,
+    fontSize: 15,
+    cursor: "pointer",
+    boxShadow: "0 10px 24px rgba(0,0,0,.18)",
+  },
+
+
 };
 
 // tiny keyframes (inline style can't define keyframes, so we inject once)
